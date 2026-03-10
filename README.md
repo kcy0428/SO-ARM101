@@ -151,3 +151,126 @@ sequenceDiagram
 - [ ] TurtleBot3 자율주행 연동
 - [ ] 전체 파이프라인 통합 테스트
 - [ ] 성능 최적화 및 시연
+
+---
+
+## 개발 환경 세팅
+
+### 사전 요구사항
+
+- Ubuntu 24.04
+- Python 3.10+
+- GPU (CUDA 지원 권장)
+- SO-ARM101 전체 키트 (Leader + Follower)
+
+---
+
+### 1. Miniconda 설치
+
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+```
+
+---
+
+### 2. LeRobot 설치
+
+#### 2-1. 가상환경 생성
+
+```bash
+conda create -y -n lerobot python=3.10
+conda activate lerobot
+```
+
+#### 2-2. LeRobot 소스 클론 및 설치
+
+```bash
+git clone https://github.com/huggingface/lerobot.git
+cd lerobot
+pip install -e ".[feetech]"
+```
+
+> `[feetech]` 옵션은 SO-ARM101에서 사용하는 Feetech 서보 모터 드라이버를 함께 설치합니다.
+
+---
+
+### 3. SO-ARM101 포트 권한 설정
+
+```bash
+# USB 포트 권한 부여 (매번 하지 않아도 되도록 그룹 추가)
+sudo usermod -aG dialout $USER
+
+# 재로그인 후 포트 확인
+ls /dev/ttyUSB*
+```
+
+---
+
+### 4. SO-ARM101 캘리브레이션
+
+```bash
+conda activate lerobot
+
+# Leader 팔 캘리브레이션
+python lerobot/scripts/control_robot.py calibrate \
+    --robot-path lerobot/configs/robot/so101_leader.yaml
+
+# Follower 팔 캘리브레이션
+python lerobot/scripts/control_robot.py calibrate \
+    --robot-path lerobot/configs/robot/so101_follower.yaml
+```
+
+---
+
+### 5. 텔레오퍼레이션 (동작 확인)
+
+```bash
+conda activate lerobot
+
+python lerobot/scripts/control_robot.py teleoperate \
+    --robot-path lerobot/configs/robot/so101.yaml
+```
+
+Leader 팔을 손으로 움직이면 Follower 팔이 따라 움직이면 정상입니다.
+
+---
+
+### 6. 데이터 수집
+
+```bash
+conda activate lerobot
+
+python lerobot/scripts/control_robot.py record \
+    --robot-path lerobot/configs/robot/so101.yaml \
+    --repo-id ${HF_USER}/so101_pick_garbage \
+    --num-episodes 50 \
+    --single-task "Pick up the garbage and place it in the bin"
+```
+
+---
+
+### 7. ACT 모델 학습
+
+```bash
+conda activate lerobot
+
+python lerobot/scripts/train.py \
+    --policy-type act \
+    --dataset-repo-id ${HF_USER}/so101_pick_garbage \
+    --output-dir outputs/train/so101_act
+```
+
+---
+
+### 8. 학습된 모델로 자율 동작
+
+```bash
+conda activate lerobot
+
+python lerobot/scripts/control_robot.py record \
+    --robot-path lerobot/configs/robot/so101.yaml \
+    --policy-path outputs/train/so101_act/checkpoints/last/pretrained_model \
+    --num-episodes 10
+```
