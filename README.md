@@ -242,10 +242,86 @@ gantt
 - Python 3.10+
 - GPU (CUDA 지원 권장)
 - SO-ARM101 전체 키트 (Leader + Follower)
+- Intel RealSense D405 (USB-C 3.1)
 
 ---
 
-### 1. Miniconda 설치
+### 하드웨어 스펙 - Intel RealSense D405
+
+| 항목 | 스펙 |
+|------|------|
+| 최적 측정 거리 | 7cm ~ 50cm |
+| 최대 측정 거리 | ~1.5m |
+| Depth 해상도 | 1280 × 720 @ 30fps |
+| RGB 해상도 | 1280 × 800 @ 30fps |
+| 셔터 방식 | 글로벌 셔터 |
+| 인터페이스 | USB-C (USB 3.1) |
+
+> D405는 근거리 특화 카메라입니다. 로봇팔이 쓰레기에 근접한 후 (7~50cm) Point Cloud로 정밀 크기 측정에 활용합니다.
+
+---
+
+### 1. Intel RealSense SDK 설치 (librealsense2)
+
+```bash
+# 의존성 설치
+sudo apt update && sudo apt install -y \
+    libssl-dev libusb-1.0-0-dev libudev-dev \
+    pkg-config libgtk-3-dev cmake
+
+# Intel 공식 저장소 등록
+sudo mkdir -p /etc/apt/keyrings
+curl -sSf https://librealsense.intel.com/Debian/librealsense.pgp \
+    | sudo tee /etc/apt/keyrings/librealsense.pgp > /dev/null
+
+echo "deb [signed-by=/etc/apt/keyrings/librealsense.pgp] \
+https://librealsense.intel.com/Debian/apt-repo `lsb_release -cs` main" \
+    | sudo tee /etc/apt/sources.list.d/librealsense.list
+
+sudo apt update
+sudo apt install -y librealsense2-dkms librealsense2-utils librealsense2-dev
+```
+
+#### 설치 확인
+
+```bash
+# D405 연결 후
+realsense-viewer
+```
+
+---
+
+### 2. RealSense ROS2 래퍼 설치
+
+```bash
+# ROS2 Jazzy용 realsense2_camera 패키지 설치
+sudo apt install -y ros-jazzy-realsense2-camera
+```
+
+#### D405 ROS2 노드 실행
+
+```bash
+source /opt/ros/jazzy/setup.bash
+
+ros2 launch realsense2_camera rs_launch.py \
+    depth_module.profile:=1280x720x30 \
+    rgb_camera.profile:=1280x800x30 \
+    pointcloud.enable:=true \
+    align_depth.enable:=true
+```
+
+#### 토픽 확인
+
+```bash
+ros2 topic list | grep camera
+# /camera/camera/color/image_raw          ← RGB 영상
+# /camera/camera/depth/image_rect_raw     ← Depth 맵
+# /camera/camera/depth/color/points       ← Point Cloud
+```
+
+---
+
+### 3. Miniconda 설치
 
 ```bash
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
