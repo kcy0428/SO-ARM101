@@ -4,7 +4,7 @@
 
 ---
 
-## 시스템 블럭도
+## 전체 시스템 블럭도 (2학기 최종)
 
 ```mermaid
 flowchart TD
@@ -50,6 +50,43 @@ flowchart TD
     TB -->|"쓰레기통 앞 도착"| AC
     AC --> LR
     ARM -->|"쓰레기 투입"| BIN
+```
+
+---
+
+## 1학기 블럭도
+
+```mermaid
+flowchart TD
+    subgraph CAM["뎁스카메라 (RGB-D)"]
+        RGB["RGB 영상"]
+        DEPTH["Depth 맵"]
+    end
+
+    subgraph PC["Host PC (Ubuntu 24.04 / ROS2 Jazzy)"]
+        YO["YOLOv8\n쓰레기 감지"]
+        POS["3D 좌표 계산\n위치값 X, Y + 깊이값 Z"]
+        AC["Arm Controller Node\n(ROS2)"]
+        LR["LeRobot ACT 모델\n관절 각도 추론"]
+    end
+
+    subgraph HW["로봇팔 제어 하드웨어"]
+        BOARD["SO-ARM101\n서보 제어 보드 (USB)"]
+        ARM["SO-ARM101\n로봇팔 (Follower)"]
+    end
+
+    subgraph RESULT["결과"]
+        GRAB["쓰레기 집기 완료"]
+    end
+
+    RGB -->|"영상 스트림"| YO
+    DEPTH -->|"픽셀별 거리"| POS
+    YO -->|"쓰레기 BBox"| POS
+    POS -->|"3D 좌표 (X, Y, Z)"| AC
+    AC -->|"모델 추론 요청"| LR
+    LR -->|"관절 각도 명령"| BOARD
+    BOARD -->|"서보 모터 제어"| ARM
+    ARM --> GRAB
 ```
 
 ---
