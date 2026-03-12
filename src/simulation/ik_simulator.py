@@ -35,40 +35,40 @@ arm = ikpy.chain.Chain(
         # 관절 1: 베이스 회전 (Z축)
         ikpy.link.URDFLink(
             name="base_rotation",
-            translation_vector=[0, 0, L_BASE],
-            orientation=[0, 0, 0],
+            origin_translation=[0, 0, L_BASE],
+            origin_orientation=[0, 0, 0],
             rotation=[0, 0, 1],
             bounds=(-np.pi, np.pi),
         ),
         # 관절 2: 어깨 (Y축)
         ikpy.link.URDFLink(
             name="shoulder",
-            translation_vector=[0, 0, 0],
-            orientation=[0, 0, 0],
+            origin_translation=[0, 0, 0],
+            origin_orientation=[0, 0, 0],
             rotation=[0, 1, 0],
             bounds=(-np.pi / 2, np.pi / 2),
         ),
         # 관절 3: 팔꿈치 (Y축)
         ikpy.link.URDFLink(
             name="elbow",
-            translation_vector=[L_UPPER, 0, 0],
-            orientation=[0, 0, 0],
+            origin_translation=[L_UPPER, 0, 0],
+            origin_orientation=[0, 0, 0],
             rotation=[0, 1, 0],
             bounds=(-np.pi * 0.9, np.pi * 0.9),
         ),
         # 관절 4: 손목 (Y축)
         ikpy.link.URDFLink(
             name="wrist",
-            translation_vector=[L_LOWER, 0, 0],
-            orientation=[0, 0, 0],
+            origin_translation=[L_LOWER, 0, 0],
+            origin_orientation=[0, 0, 0],
             rotation=[0, 1, 0],
             bounds=(-np.pi / 2, np.pi / 2),
         ),
         # 엔드이펙터 (고정)
         ikpy.link.URDFLink(
             name="end_effector",
-            translation_vector=[L_WRIST, 0, 0],
-            orientation=[0, 0, 0],
+            origin_translation=[L_WRIST, 0, 0],
+            origin_orientation=[0, 0, 0],
             rotation=[0, 0, 0],
         ),
     ],
