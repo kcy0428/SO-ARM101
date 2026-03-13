@@ -37,7 +37,7 @@ arm = ikpy.chain.Chain(
     name="so_arm101",
     links=[
         ikpy.link.OriginLink(),
-        # 관절 1: 베이스 회전 (Z축)
+        # 관절 1: 베이스 회전 (Z축) - 좌우 360도
         ikpy.link.URDFLink(
             name="base_rotation",
             origin_translation=[0, 0, L_BASE],
@@ -45,21 +45,21 @@ arm = ikpy.chain.Chain(
             rotation=[0, 0, 1],
             bounds=(-np.pi, np.pi),
         ),
-        # 관절 2: 어깨 (Y축)
+        # 관절 2: 어깨 (Y축) - 아래 30도 ~ 위 150도 (바닥 관통 방지)
         ikpy.link.URDFLink(
             name="shoulder",
             origin_translation=[0, 0, 0],
             origin_orientation=[0, 0, 0],
             rotation=[0, 1, 0],
-            bounds=(-np.pi / 2, np.pi / 2),
+            bounds=(-np.pi / 6, np.pi * 5 / 6),
         ),
-        # 관절 3: 팔꿈치 (Y축)
+        # 관절 3: 팔꿈치 (Y축) - 접힘 방지
         ikpy.link.URDFLink(
             name="elbow",
             origin_translation=[L_UPPER, 0, 0],
             origin_orientation=[0, 0, 0],
             rotation=[0, 1, 0],
-            bounds=(-np.pi * 0.9, np.pi * 0.9),
+            bounds=(-np.pi * 2 / 3, np.pi * 2 / 3),
         ),
         # 관절 4: 손목 (Y축)
         ikpy.link.URDFLink(
@@ -78,6 +78,9 @@ arm = ikpy.chain.Chain(
         ),
     ],
 )
+
+# 홈 자세: 팔을 위로 세운 초기 상태 (IK 시작점으로 사용)
+HOME_ANGLES = np.array([0, 0, np.pi / 4, -np.pi / 4, np.pi / 4, 0, 0])
 
 
 # ──────────────────────────────────────────────────────────
@@ -249,7 +252,7 @@ def draw_info(current_angles, target_angles, target_xyz, error_mm):
 # 5. 상태 및 이벤트
 # ──────────────────────────────────────────────────────────
 state = {
-    "current_angles": np.zeros(len(arm.links)),
+    "current_angles": HOME_ANGLES.copy(),
     "anim": None,
 }
 
@@ -269,14 +272,15 @@ def on_move(event=None):
     if dist > REACH:
         print(f"[경고] 목표({dist:.3f}m)가 팔 도달 범위({REACH:.3f}m)를 벗어납니다.")
         return
-    if z < 0:
-        print("[경고] Z는 0 이상이어야 합니다.")
+    if z < 0.02:
+        print("[경고] Z는 0.02m 이상이어야 합니다.")
         return
 
     print(f"\n[IK 계산] 목표: X={x:.3f}, Y={y:.3f}, Z={z:.3f}")
 
     current = state["current_angles"]
-    target_angles = compute_ik(target, current)
+    # 홈 자세에서 시작해야 팔이 바닥 아래로 꺾이지 않음
+    target_angles = compute_ik(target, HOME_ANGLES)
 
     actual  = get_positions(target_angles)[-1]
     error_mm = np.linalg.norm(np.array(target) - actual) * 1000
